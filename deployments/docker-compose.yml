@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:13
+    restart: always
+    volumes:
+      - pg_data:/var/lib/postgresql/data/pgdata
+      - ./create_tables.sql:/docker-entrypoint-create_tables.d/create_tables.sql:ro
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=default_user
+      - POSTGRES_DB=db
+      - POSTGRES_PASSWORD=default_password
+      - PGDATA=/var/lib/postgresql/data/pgdata
+volumes:
+  pg_data: {}
