@@ -49,11 +49,7 @@ func (a *Application) initConfig() error {
 
 func (a *Application) initRouter() error {
 	a.router = api.NewRouter()
-	a.router.Use(func(c *gin.Context) {
-		c.Set("db", a.db)
-		c.Next()
-	})
-	api.InitializeRoutes(a.router)
+	api.InitializeRoutes(a.router, a.db)
 	err := a.router.Run(a.cfg.URL)
 	if err != nil {
 		return fmt.Errorf("failed to run router: %w", err)
