@@ -30,7 +30,9 @@ func (a *Application) Start(ctx context.Context) error {
 		return fmt.Errorf("can't init db connection: %w", err)
 	}
 
-	a.initRouter()
+	if err := a.initRouter(); err != nil {
+		return fmt.Errorf("can't init router: %w", err)
+	}
 	return nil
 }
 
@@ -45,9 +47,19 @@ func (a *Application) initConfig() error {
 	return nil
 }
 
-func (a *Application) initRouter() {
+func (a *Application) initRouter() error {
 	a.router = api.NewRouter()
+	a.router.Use(func(c *gin.Context) {
+		c.Set("db", a.db)
+		c.Next()
+	})
 	api.InitializeRoutes(a.router)
+	err := a.router.Run(a.cfg.URL)
+	if err != nil {
+		return fmt.Errorf("failed to run router: %w", err)
+	}
+
+	return nil
 }
 
 func (a *Application) initDatabaseConnection() error {

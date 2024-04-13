@@ -11,7 +11,12 @@ func getUserBannerHandler(c *gin.Context) {
 }
 
 func getAllBannersHandler(c *gin.Context) {
-	// TODO business logic
+	_, exists := c.Get("db")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка доступа к базе данных"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "Все баннеры"})
 }
 
