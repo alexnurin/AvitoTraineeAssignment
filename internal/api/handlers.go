@@ -91,6 +91,20 @@ func updateBannerHandler(c *gin.Context, db *sqlx.DB) {
 }
 
 func deleteBannerHandler(c *gin.Context, db *sqlx.DB) {
-	// TODO business logic
-	c.JSON(http.StatusOK, gin.H{"message": "Баннер удален"})
+	bannerId := c.Param("id")
+
+	query := `DELETE FROM banners WHERE banner_id = $1`
+	result, err := db.Exec(query, bannerId)
+	if err != nil {
+		log.Printf("Ошибка при удалении баннера: %s\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Внутренняя ошибка сервера"})
+		return
+	}
+
+	if count, _ := result.RowsAffected(); count == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Баннер не найден"})
+		return
+	}
+
+	c.JSON(http.StatusNoContent, nil)
 }
