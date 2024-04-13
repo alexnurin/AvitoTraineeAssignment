@@ -33,11 +33,19 @@ func getUserBannerHandler(c *gin.Context, db *sqlx.DB) {
 	c.JSON(http.StatusOK, contents[0])
 }
 
-func getAllBannersHandler(c *gin.Context, db *sqlx.DB) {
+func getFilteredBannersHandler(c *gin.Context, db *sqlx.DB) {
+	params := map[string]string{
+		"feature_id": c.Query("feature_id"),
+		"tag_id":     c.Query("tag_id"),
+		"limit":      c.Query("limit"),
+		"offset":     c.Query("offset"),
+	}
+
+	query, args := buildGetBannerQuery(params)
+
 	var banners []models.Banner
-	query := "SELECT * FROM banners"
-	if err := db.Select(&banners, query); err != nil {
-		log.Printf("ошибка при запросе баннеров: %s\n", err)
+	if err := db.Select(&banners, query, args...); err != nil {
+		log.Printf("ошибка при запросе баннеров: %s\n\t очередь = %s", err, query)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при запросе баннеров"})
 		return
 	}

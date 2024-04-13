@@ -16,7 +16,7 @@ func InitializeRoutes(router *gin.Engine, db *sqlx.DB) {
 	})
 
 	router.GET("/banner", func(c *gin.Context) {
-		getAllBannersHandler(c, db)
+		getFilteredBannersHandler(c, db)
 	})
 
 	router.POST("/banner", func(c *gin.Context) {
