@@ -2,41 +2,43 @@ package models
 
 import (
 	"encoding/json"
+	"github.com/lib/pq"
 	"time"
 )
 
-type Feature struct {
-	FeatureID int `db:"feature_id"`
-}
-
-type Tag struct {
-	TagID int `db:"tag_id"`
-}
-
 type Banner struct {
-	BannerID   int             `db:"banner_id"`
-	BannerData json.RawMessage `db:"banner_data"`
-	FeatureID  int             `db:"feature_id"`
+	BannerID  int             `json:"banner_id" db:"banner_id"`
+	TagIDs    pq.Int64Array   `json:"tag_ids,omitempty" db:"tag_ids"`
+	FeatureID int             `json:"feature_id" db:"feature_id"`
+	Content   json.RawMessage `json:"content,omitempty" db:"content"`
+	IsActive  bool            `json:"is_active" db:"is_active"`
+	CreatedAt time.Time       `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time       `json:"updated_at" db:"updated_at"`
 }
 
-type BannerTag struct {
-	BannerID int `db:"banner_id"`
-	TagID    int `db:"tag_id"`
+type UserBannerRequest struct {
+	TagID           int  `form:"tag_id" binding:"required"`
+	FeatureID       int  `form:"feature_id" binding:"required"`
+	UseLastRevision bool `form:"use_last_revision"`
 }
 
-type User struct {
-	UserID int  `db:"user_id"`
-	IsVIP  bool `db:"is_vip"`
+type BannerFilterRequest struct {
+	FeatureID int `form:"feature_id"`
+	TagID     int `form:"tag_id"`
+	Limit     int `form:"limit"`
+	Offset    int `form:"offset"`
 }
 
-type UserTag struct {
-	UserID int `db:"user_id"`
-	TagID  int `db:"tag_id"`
+type CreateBannerRequest struct {
+	TagIDs    []int                  `json:"tag_ids" binding:"required"`
+	FeatureID int                    `json:"feature_id" binding:"required"`
+	Content   map[string]interface{} `json:"content" binding:"required"`
+	IsActive  bool                   `json:"is_active"`
 }
 
-type UserBannerVisibility struct {
-	UserID     int       `db:"user_id"`
-	BannerID   int       `db:"banner_id"`
-	IsCurrent  bool      `db:"is_current"`
-	LastUpdate time.Time `db:"last_update"`
+type UpdateBannerRequest struct {
+	TagIDs    []int                  `json:"tag_ids"`
+	FeatureID int                    `json:"feature_id"`
+	Content   map[string]interface{} `json:"content"`
+	IsActive  bool                   `json:"is_active"`
 }

@@ -22,9 +22,7 @@ func main() {
 	application := app.NewApplication()
 
 	if err := application.Start(ctx); err != nil {
-		log.Fatalf("failed to run app: %v", err)
+		log.Fatalf("не удалось запустить приложение: %v", err)
 	}
-	<-ctx.Done()
-	log.Println("All systems closed without errors")
-
+	log.Println("Приложение завершило работу без ошибок")
 }
