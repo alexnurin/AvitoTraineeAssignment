@@ -39,7 +39,7 @@ func buildGetBannerQuery(params map[string]string) (string, []interface{}) {
 
 	if limitStr, ok := params["limit"]; ok && limitStr != "" {
 		limit, err := strconv.Atoi(limitStr)
-		if err == nil {
+		if err == nil && limit >= 0 {
 			query += " LIMIT $" + strconv.Itoa(i)
 			args = append(args, limit)
 			i++
@@ -48,7 +48,7 @@ func buildGetBannerQuery(params map[string]string) (string, []interface{}) {
 
 	if offsetStr, ok := params["offset"]; ok && offsetStr != "" {
 		offset, err := strconv.Atoi(offsetStr)
-		if err == nil {
+		if err == nil && offset >= 0 {
 			query += " OFFSET $" + strconv.Itoa(i)
 			args = append(args, offset)
 			i++
