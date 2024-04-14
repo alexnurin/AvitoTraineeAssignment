@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	ctx, stop := signal.NotifyContext( // TODO cancel
+	_, stop := signal.NotifyContext( // TODO cancel
 		context.Background(),
 		syscall.SIGINT,
 		syscall.SIGTERM,
@@ -21,7 +21,7 @@ func main() {
 
 	application := app.NewApplication()
 
-	if err := application.Start(ctx); err != nil {
+	if err := application.Start(); err != nil {
 		log.Fatalf("не удалось запустить приложение: %v", err)
 	}
 	log.Println("Приложение завершило работу без ошибок")

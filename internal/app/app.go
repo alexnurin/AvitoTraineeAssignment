@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"fmt"
 	"github.com/alexnurin/AvitoTraineeAssignment/internal/api"
 	"github.com/alexnurin/AvitoTraineeAssignment/internal/config"
@@ -9,6 +8,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"log"
+	"time"
 )
 
 type Application struct {
@@ -21,7 +21,7 @@ func NewApplication() *Application {
 	return &Application{}
 }
 
-func (a *Application) Start(ctx context.Context) error {
+func (a *Application) Start() error {
 	if err := a.initConfig(); err != nil {
 		return fmt.Errorf("can't init config: %w", err)
 	}
@@ -71,9 +71,9 @@ func (a *Application) initDatabaseConnection() error {
 		return err
 	}
 
-	//dbConn.SetMaxOpenConns(25)           // Максимальное количество открытых соединений
-	//dbConn.SetMaxIdleConns(10)           // Максимальное количество простаивающих соединений
-	//dbConn.SetConnMaxLifetime(time.Hour) // Максимальное время жизни соединения
+	dbConn.SetMaxOpenConns(25)           // Максимальное количество открытых соединений
+	dbConn.SetMaxIdleConns(10)           // Максимальное количество простаивающих соединений
+	dbConn.SetConnMaxLifetime(time.Hour) // Максимальное время жизни соединения
 
 	err = dbConn.Ping()
 	if err != nil {

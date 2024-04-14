@@ -1,7 +1,9 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/alexnurin/AvitoTraineeAssignment/internal/models"
 	"github.com/gin-gonic/gin"
@@ -9,6 +11,7 @@ import (
 	"github.com/lib/pq"
 	"log"
 	"net/http"
+	"time"
 )
 
 func getUserBannerHandler(c *gin.Context, db *sqlx.DB) {
