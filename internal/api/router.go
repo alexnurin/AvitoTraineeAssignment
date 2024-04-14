@@ -13,6 +13,7 @@ func NewRouter() *gin.Engine {
 
 func TokenAuthMiddleware(validTokens []string) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		c.Set("isAdmin", false)
 		token := c.GetHeader("token")
 		if token == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Пользователь не авторизован"})
@@ -29,6 +30,7 @@ func TokenAuthMiddleware(validTokens []string) gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Пользователь не имеет доступа"})
 			return
 		}
+		c.Set("isAdmin", true)
 		c.Next()
 	}
 }
@@ -58,7 +60,6 @@ func InitializeRoutes(router *gin.Engine, db *sqlx.DB) {
 			deleteBannerHandler(c, db)
 		})
 	}
-
 	router.GET("/user_banner", TokenAuthMiddleware(anyToken), func(c *gin.Context) {
 		getUserBannerHandler(c, db)
 	})

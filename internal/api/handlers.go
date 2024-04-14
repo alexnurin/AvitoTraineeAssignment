@@ -17,9 +17,14 @@ func getUserBannerHandler(c *gin.Context, db *sqlx.DB) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Необходимы параметры feature_id и tag_id"})
 		return
 	}
-	var contents []json.RawMessage
-	query := "SELECT content FROM banners WHERE feature_id = $1 AND $2 = ANY(tag_ids) AND is_active = true"
 
+	query := "SELECT content FROM banners WHERE feature_id = $1 AND $2 = ANY(tag_ids)"
+	isAdmin := c.GetBool("isAdmin")
+	if !isAdmin {
+		query += " AND is_active = true"
+	}
+
+	var contents []json.RawMessage
 	err := db.Select(&contents, query, featureID, tagID)
 	if err != nil {
 		log.Printf("ошибка при получения баннера по feature_id и tag_id: %s\n", err)
