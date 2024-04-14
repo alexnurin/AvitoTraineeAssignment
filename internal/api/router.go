@@ -3,10 +3,15 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
+	"github.com/patrickmn/go-cache"
+	"time"
 )
+
+var globalCache = cache.New(5*time.Minute, 10*time.Minute)
 
 func NewRouter() *gin.Engine {
 	router := gin.Default()
+	router.Use(CacheMiddleware())
 	return router
 }
 
