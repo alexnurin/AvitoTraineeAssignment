@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/alexnurin/AvitoTraineeAssignment/internal/models"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
@@ -57,6 +58,20 @@ func getFilteredBannersHandler(c *gin.Context, db *sqlx.DB) {
 	c.JSON(http.StatusOK, gin.H{"banners": banners})
 }
 
+func checkBannerUniqueness(db *sqlx.DB, featureID int, tagIDs pq.Int64Array) (int, error) {
+	var exists bool
+	checkQuery := `SELECT EXISTS(SELECT 1 FROM banners WHERE feature_id = $1 AND $2 && tag_ids)`
+	err := db.QueryRow(checkQuery, featureID, pq.Array(tagIDs)).Scan(&exists)
+	if err != nil {
+		log.Printf("ошибка при проверке уникальности баннера: %s\n", err)
+		return http.StatusInternalServerError, fmt.Errorf("внутренняя ошибка сервера")
+	}
+	if exists {
+		return http.StatusBadRequest, fmt.Errorf("такая комбинация feature_id и tag_ids уже существует")
+	}
+	return http.StatusOK, nil
+}
+
 func createBannerHandler(c *gin.Context, db *sqlx.DB) {
 	var newBanner models.Banner
 
@@ -66,6 +81,10 @@ func createBannerHandler(c *gin.Context, db *sqlx.DB) {
 		return
 	}
 
+	if statusCode, err := checkBannerUniqueness(db, newBanner.FeatureID, newBanner.TagIDs); err != nil {
+		c.JSON(statusCode, gin.H{"error": err.Error()})
+		return
+	}
 	var bannerID int
 	query := `INSERT INTO banners (tag_ids, feature_id, content, is_active) VALUES ($1, $2, $3, $4) RETURNING banner_id`
 	err := db.QueryRow(query, pq.Array(newBanner.TagIDs), newBanner.FeatureID, newBanner.Content, newBanner.IsActive).Scan(&bannerID)
@@ -75,6 +94,16 @@ func createBannerHandler(c *gin.Context, db *sqlx.DB) {
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{"banner_id": bannerID})
+}
+
+func getCurrentBannerDetails(db *sqlx.DB, bannerID string) (int, pq.Int64Array, error) {
+	var featureID int
+	var tagIDs pq.Int64Array
+	selectQuery := `SELECT feature_id, tag_ids FROM banners WHERE banner_id = $1`
+	if err := db.QueryRow(selectQuery, bannerID).Scan(&featureID, pq.Array(&tagIDs)); err != nil {
+		return 0, nil, fmt.Errorf("ошибка при получении текущих значений баннера: %w", err)
+	}
+	return featureID, tagIDs, nil
 }
 
 func updateBannerHandler(c *gin.Context, db *sqlx.DB) {
@@ -88,6 +117,24 @@ func updateBannerHandler(c *gin.Context, db *sqlx.DB) {
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Некорректные данные"})
 		return
+	}
+	if input.FeatureID != nil || input.TagIDs != nil {
+		currentFeatureID, currentTagIDs, err := getCurrentBannerDetails(db, bannerId)
+		if err != nil {
+			log.Printf("%v\n", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при запросе текущих данных баннера"})
+			return
+		}
+		if input.FeatureID == nil {
+			input.FeatureID = &currentFeatureID
+		}
+		if input.TagIDs == nil {
+			input.TagIDs = &currentTagIDs
+		}
+		if statusCode, err := checkBannerUniqueness(db, *input.FeatureID, *input.TagIDs); err != nil {
+			c.JSON(statusCode, gin.H{"error": err.Error()})
+			return
+		}
 	}
 	query, args := buildUpdateBannerQuery(input, bannerId)
 	result, err := db.Exec(query, args...)
