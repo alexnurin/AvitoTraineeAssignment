@@ -6,7 +6,7 @@ base_url = 'http://localhost:7070'
 
 token = 'admin_token'
 
-count = 100
+count = 20
 
 tag_ids_array = [['1', '2'], ['2', '3'], ['1', '3'], ['3', '4'], ['4', '5'],
 ['11', '12'], ['12', '31'], ['11', '13'], ['13', '14'], ['14', '15']]
@@ -36,7 +36,7 @@ for _ in range(count):
     }
 
     response = requests.post(f"{base_url}/banner", headers=headers, data=json_data)
-    print(f"Status Code: {response.status_code}, Response: {response.json()}")
+    print(f"Status Code: {response.status_code}, Response: {response.json()} (tag_ids={tag_ids}; feature_id={feature_id})")
 
 
 print("Создание баннеров завершено.")

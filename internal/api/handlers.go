@@ -14,29 +14,46 @@ import (
 func getUserBannerHandler(c *gin.Context, db *sqlx.DB) {
 	featureID := c.Query("feature_id")
 	tagID := c.Query("tag_id")
+	useLastRevision := c.Query("use_last_revision") == "true"
+
 	if featureID == "" || tagID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Необходимы параметры feature_id и tag_id"})
 		return
 	}
+	var content json.RawMessage
+	var err error
 
-	query := "SELECT content FROM banners WHERE feature_id = $1 AND $2 = ANY(tag_ids)"
-	isAdmin := c.GetBool("isAdmin")
-	if !isAdmin {
-		query += " AND is_active = true"
+	if useLastRevision {
+		query := "SELECT content FROM banners WHERE feature_id = $1 AND $2 = ANY(tag_ids)"
+		isAdmin := c.GetBool("isAdmin")
+		if !isAdmin {
+			query += " AND is_active = true"
+		}
+
+		err = db.Get(&content, query, featureID, tagID)
+	} else {
+		cacheKey := fmt.Sprintf("banner-%s-%s", featureID, tagID)
+		cachedContent, found := globalCache.Get(cacheKey)
+		if found {
+			content = cachedContent.(json.RawMessage)
+		} else {
+			err = db.Get(&content, "SELECT content FROM banners WHERE feature_id = $1 AND $2 = ANY(tag_ids) ORDER BY updated_at DESC LIMIT 1", featureID, tagID)
+			if err == nil {
+				globalCache.Set(cacheKey, content, time.Minute*5)
+			}
+		}
 	}
 
-	var contents []json.RawMessage
-	err := db.Select(&contents, query, featureID, tagID)
 	if err != nil {
-		log.Printf("ошибка при получения баннера по feature_id и tag_id: %s\n", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Внутренняя ошибка сервера"})
+		if errors.Is(err, sql.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Баннер не найден"})
+		} else {
+			log.Printf("ошибка при получении баннера: %s\n", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Внутренняя ошибка сервера"})
+		}
 		return
 	}
-	if len(contents) == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Баннеры не найдены"})
-		return
-	}
-	c.JSON(http.StatusOK, contents[0])
+	c.JSON(http.StatusOK, content)
 }
 
 func getFilteredBannersHandler(c *gin.Context, db *sqlx.DB) {

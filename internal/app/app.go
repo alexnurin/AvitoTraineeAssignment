@@ -71,6 +71,10 @@ func (a *Application) initDatabaseConnection() error {
 		return err
 	}
 
+	//dbConn.SetMaxOpenConns(25)           // Максимальное количество открытых соединений
+	//dbConn.SetMaxIdleConns(10)           // Максимальное количество простаивающих соединений
+	//dbConn.SetConnMaxLifetime(time.Hour) // Максимальное время жизни соединения
+
 	err = dbConn.Ping()
 	if err != nil {
 		return err
