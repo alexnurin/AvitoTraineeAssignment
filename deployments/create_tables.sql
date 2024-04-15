@@ -9,9 +9,9 @@ CREATE TABLE IF NOT EXISTS banners
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- CREATE INDEX idx_feature_id ON banners (feature_id);
--- CREATE INDEX idx_is_active ON banners (is_active);
--- CREATE INDEX idx_tag_ids ON banners USING GIN (tag_ids);
--- CREATE INDEX idx_feature_id_is_active ON banners (feature_id, is_active);
+CREATE INDEX idx_feature_id ON banners (feature_id);
+CREATE INDEX idx_is_active ON banners (is_active);
+CREATE INDEX idx_tag_ids ON banners USING GIN (tag_ids);
+CREATE INDEX idx_feature_id_is_active ON banners (feature_id, is_active);
 
 

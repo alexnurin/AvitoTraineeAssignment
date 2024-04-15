@@ -101,10 +101,10 @@ func createBannerHandler(c *gin.Context, db *sqlx.DB) {
 		return
 	}
 
-	//if statusCode, err := checkBannerUniqueness(db, newBanner.FeatureID, newBanner.TagIDs); err != nil {
-	//	c.JSON(statusCode, gin.H{"error": err.Error()})
-	//	return
-	//}
+	if statusCode, err := checkBannerUniqueness(db, newBanner.FeatureID, newBanner.TagIDs); err != nil {
+		c.JSON(statusCode, gin.H{"error": err.Error()})
+		return
+	}
 	var bannerID int
 	query := `INSERT INTO banners (tag_ids, feature_id, content, is_active) VALUES ($1, $2, $3, $4) RETURNING banner_id`
 	err := db.QueryRow(query, pq.Array(newBanner.TagIDs), newBanner.FeatureID, newBanner.Content, newBanner.IsActive).Scan(&bannerID)
