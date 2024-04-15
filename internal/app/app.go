@@ -1,20 +1,21 @@
 package app
 
 import (
+	"context"
 	"fmt"
-	"github.com/alexnurin/AvitoTraineeAssignment/internal/api"
 	"github.com/alexnurin/AvitoTraineeAssignment/internal/config"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"log"
-	"time"
+	"net/http"
 )
 
 type Application struct {
-	cfg    *config.Config
-	db     *sqlx.DB
-	router *gin.Engine
+	cfg        *config.Config
+	db         *sqlx.DB
+	router     *gin.Engine
+	httpServer *http.Server
 }
 
 func NewApplication() *Application {
@@ -23,65 +24,34 @@ func NewApplication() *Application {
 
 func (a *Application) Start() error {
 	if err := a.initConfig(); err != nil {
-		return fmt.Errorf("can't init config: %w", err)
+		return fmt.Errorf("не удалось загрузить конфигурацию: %v", err)
 	}
 
 	if err := a.initDatabaseConnection(); err != nil {
-		return fmt.Errorf("can't init db connection: %w", err)
+		return fmt.Errorf("не удалось подключиться к базе данных: %v", err)
 	}
 
 	if err := a.initRouter(); err != nil {
-		return fmt.Errorf("can't init router: %w", err)
+		return fmt.Errorf("не удалось запустить роутер: %v", err)
+	}
+
+	if err := a.initServer(); err != nil {
+		return fmt.Errorf("не удалось запустить сервер: %v", err)
 	}
 	return nil
 }
 
-func (a *Application) initConfig() error {
-	var err error
+func (a *Application) Wait(ctx context.Context) error {
+	<-ctx.Done()
 
-	a.cfg, err = config.ParseConfig()
-	if err != nil {
-		return fmt.Errorf("failed to parse config: %w", err)
+	if err := a.db.Close(); err != nil {
+		log.Printf("не удалось закрыть соединение с базой данных: %v", err)
 	}
 
-	return nil
-}
-
-func (a *Application) initRouter() error {
-	a.router = api.NewRouter()
-	api.InitializeRoutes(a.router, a.db)
-	err := a.router.Run(a.cfg.URL)
-	if err != nil {
-		return fmt.Errorf("failed to run router: %w", err)
+	if err := a.httpServer.Shutdown(context.Background()); err != nil {
+		log.Printf("не удалось корректно остановить HTTP сервер: %v", err)
 	}
 
-	return nil
-}
-
-func (a *Application) initDatabaseConnection() error {
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		a.cfg.DB.Host,
-		a.cfg.DB.Port,
-		a.cfg.DB.User,
-		a.cfg.DB.Password,
-		a.cfg.DB.Name)
-
-	dbConn, err := sqlx.Open("postgres", psqlInfo)
-	if err != nil {
-		return err
-	}
-
-	dbConn.SetMaxOpenConns(25)           // Максимальное количество открытых соединений
-	dbConn.SetMaxIdleConns(10)           // Максимальное количество простаивающих соединений
-	dbConn.SetConnMaxLifetime(time.Hour) // Максимальное время жизни соединения
-
-	err = dbConn.Ping()
-	if err != nil {
-		return err
-	}
-
-	a.db = dbConn
-	log.Println("Database connection established")
-
+	log.Println("Все системы корректно завершили работу.")
 	return nil
 }
